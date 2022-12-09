@@ -1,0 +1,70 @@
+image: node:latest
+stages:
+  - build
+  - test
+  - quality
+  - package
+
+cache:
+  paths:
+    - node_modules
+
+before_script:
+  - echo "Start continuous integration"
+
+after_script:
+  - echo "End continuous integration"
+
+variables:
+  PRODUCTION : "app_frontend.tech"
+  DEV : "app_frontend.dev"
+  VERSION : "0.0.1"
+
+install:production:
+  stage: build
+  script:
+    - npm install --production
+  only:
+    - main
+
+install:dev:
+  stage: build
+  script:
+    - npm install 
+  only:
+    - /^feature/
+
+unit:
+  stage: test
+  script:
+    - npm run test
+  except:
+    - main
+
+qa:
+  stage: quality
+  script:
+    - npm run standard-fix
+  allow_failure: true
+
+package:production:
+  stage: package
+  script:
+    - tar -cvzf ${PRODUCTION}_${VERSION}.tar.gz  --exclude="${CI_PROJECT_DIR}" --exclude="*/node_modules" --exclude="*/.git" ${CI_PROJECT_DIR}
+  artifacts:
+    paths:
+      - ${CI_PROJECT_DIR}/${PRODUCTION}_${VERSION}.tar.gz
+    expire_in: "1 week"
+  only:
+    - main
+
+package:dev:
+  stage: package
+  script:
+    - tar -cvzf ${DEV}_${VERSION}.tar.gz  --exclude="${CI_PROJECT_DIR}" --exclude="*/node_modules" --exclude="*/.git" ${CI_PROJECT_DIR}
+  artifacts:
+    paths:
+      - ${CI_PROJECT_DIR}/${DEV}_${VERSION}.tar.gz
+    expire_in: "1 week"
+  except:
+    - main
