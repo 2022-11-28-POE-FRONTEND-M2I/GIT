@@ -1,0 +1,63 @@
+stages:
+  - deploy
+
+variables:
+  PROD_DOMAIN: "www.fake.fr"
+  INTERNAL_DOMAIN: "nothing"
+  DEV_DOMAIN : "fake.test"
+  WP_THEME_DIR: "themes/summer"
+  PROD_DB_USERNAME: "fake"
+  DEMO_DB_USERNAME: "fake"
+  DEMO_USER: "fake"
+  DEV_DB_USERNAME: "fake"
+  PROD_DB_PASSWORD: "fake"
+  DEMO_DB_PASSWORD: "fake"
+  DEV_DB_PASSWORD: "fake"
+  PROD_DB_HOST: "localhost"
+  DEMO_DB_HOST: "localhost"
+
+before_script:
+  - export PROJECT_NAME_LOWER=fake
+  - export DEMO_DIR=/home/fake/public_html
+  - export DEMO_DOMAIN=fake.fr
+  - export PROD_DIR=/home/${PROJECT_NAME_LOWER}/public_html
+
+  - export COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+  - if [[ ${COMMIT_MESSAGE} == *\[migrate\ from* ]]; then export MIGRATE_DB=1; else export MIGRATE_DB=0; fi;
+  - if [[ ${COMMIT_MESSAGE} == *\[migrate\ from\ dev\]* ]]; then export MIGRATE_FROM="dev"; fi;
+  - if [[ ${COMMIT_MESSAGE} == *\[migrate\ from\ demo\]* ]]; then export MIGRATE_FROM="demo"; fi;
+  - if [[ ${COMMIT_MESSAGE} == *\[migrate\ from\ prod\]* ]]; then export MIGRATE_FROM="master"; fi;
+  - if [[ ${COMMIT_MESSAGE} == *\[migrate\ from\ internal\]* ]]; then export MIGRATE_FROM="internal"; fi;
+  - export
+  - if [ "${CI_BUILD_REF_NAME}" == "demo" ]; then  if [ -d ${DEMO_DIR} ]; then cd ${DEMO_DIR}; fi; fi;
+  - if [ "${CI_BUILD_REF_NAME}" == "master" ]; then if [ -d ${PROD_DIR} ]; then cd ${PROD_DIR}; fi; fi;
+
+deployProd:
+  stage: deploy
+  script:
+    - if [ -d ${PROD_DIR} ]; then cd ${PROD_DIR} && sudo chown -Rf "${PROJECT_NAME_LOWER}:${PROJECT_NAME_LOWER}" .git && sudo su ${PROJECT_NAME_LOWER} -c "git config core.fileMode false" && sudo su ${PROJECT_NAME_LOWER} -c "git pull"; fi;
+    - sudo su ${PROJECT_NAME_LOWER} -c "cp -fv app/config/parameters-prod.php app/config/parameters.php"
+    - cd ${WP_THEME_DIR}/_dev
+    - sudo su ${PROJECT_NAME_LOWER} -c "yarn install"
+    - sudo su ${PROJECT_NAME_LOWER} -c "yarn run build"
+  environment:
+    name: production
+  only:
+    - master
+  tags:
+    - fake-runner
+
+deployDemo:
+  stage: deploy
+  script:
+    - if [ -d ${DEMO_DIR} ]; then cd ${DEMO_DIR} && sudo chown -Rf "${DEMO_USER}:${DEMO_USER}" .git && sudo su ${DEMO_USER} -c "git config core.fileMode false" && sudo su ${DEMO_USER} -c "rm -f app/config/parameters.php" && sudo su ${DEMO_USER} -c "git pull"; fi;
+    - sudo su ${DEMO_USER} -c "cp -fv app/config/parameters-demo.php app/config/parameters.php"
+    - cd ${WP_THEME_DIR}/_dev
+    - sudo su ${DEMO_USER} -c "yarn install"
+    - sudo su ${DEMO_USER} -c "yarn run build"
+  only:
+    - demo
+  environment:
+    name: demo
+  tags:
+    - fake-runner
