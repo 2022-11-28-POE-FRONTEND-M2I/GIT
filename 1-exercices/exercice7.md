@@ -39,7 +39,7 @@ Le script précédent peut échouer, s'il échoue la tâche doit quand même êt
 La commande à exécuter pour le job de `package` uniquement sur la branche `main` est `tar -cvzf ${PRODUCTION}_${VERSION}.tar.gz --exclude="${CI_PROJECT_DIR}" --exclude="*/node_modules" --exclude="*/.git" ${CI_PROJECT_DIR}`. Le job se nomme `package:production`.
 
 
-La commande à exécuter pour le job de package sur les autres branches est est `tar -cvzf ${DEV}_${VERSION}.tar.gz  --exclude="${CI_PROJECT_DIR}" --exclude="*/node_modules" --exclude="*/.git" ${CI_PROJECT_DIR}`. Le job se nomme `package:dev`.
+La commande à exécuter pour le job de package sur les autres branches est est `tar -cvzf ${DEV}_${VERSION}.tar.gz --exclude="${CI_PROJECT_DIR}" --exclude="*/node_modules" --exclude="*/.git" ${CI_PROJECT_DIR}`. Le job se nomme `package:dev`.
 
 ## Partie 2
 
